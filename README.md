@@ -47,11 +47,17 @@ Request body:
 
 ## Installation
 
+
 1. Clone this repository
 2. Install dependencies:
    ```bash
    npm install
    ```
+
+   ```bash
+   npm install express cors qrcode-terminal pino qrcode @whiskeysockets/baileys @hapi/boom vite
+   ```
+
 3. Create `.env` file and set your configuration
 4. Run the server:
    ```bash
