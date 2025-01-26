@@ -1,0 +1,85 @@
+# WhatsApp API Gateway
+
+A multi-number WhatsApp API Gateway built with Baileys.
+
+## Features
+
+- Multi-number support
+- Session management
+- QR code generation
+- Message sending
+- Status monitoring
+- Session deletion
+
+## API Endpoints
+
+### Create Session
+```http
+POST /api/session/create/:sessionId
+```
+
+### Delete Session
+```http
+DELETE /api/session/:sessionId
+```
+
+### Get Session Status
+```http
+GET /api/session/:sessionId
+```
+
+### Get All Sessions
+```http
+GET /api/sessions
+```
+
+### Send Message
+```http
+POST /api/send/:sessionId
+```
+Request body:
+```json
+{
+  "to": "6281234567890",
+  "message": "Hello World!"
+}
+```
+
+## Installation
+
+1. Clone this repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create `.env` file and set your configuration
+4. Run the server:
+   ```bash
+   npm run dev
+   ```
+
+## Testing with Postman
+
+1. Create a new session:
+   - Method: POST
+   - URL: `http://localhost:3000/api/session/create/session1`
+
+2. Monitor session status:
+   - Method: GET
+   - URL: `http://localhost:3000/api/session/session1`
+   - Scan QR code when provided
+
+3. Send a message:
+   - Method: POST
+   - URL: `http://localhost:3000/api/send/session1`
+   - Body (JSON):
+     ```json
+     {
+       "to": "6281234567890",
+       "message": "Test message"
+     }
+     ```
+
+4. Delete session:
+   - Method: DELETE
+   - URL: `http://localhost:3000/api/session/session1`
