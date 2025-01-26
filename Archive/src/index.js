@@ -24,6 +24,6 @@ app.get('/', (req, res) => {
   res.json({ status: 'WhatsApp API Gateway is running' });
 });
 
-server.listen(port, '192.168.100.89', () => {
+server.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });

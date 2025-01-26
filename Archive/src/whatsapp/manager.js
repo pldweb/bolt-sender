@@ -1,10 +1,9 @@
-import {default as WASocket} from '@whiskeysockets/baileys';
-import {Boom} from '@hapi/boom';
+import { default as WASocket } from '@whiskeysockets/baileys';
+import { Boom } from '@hapi/boom';
 import QRCode from 'qrcode';
 import pino from 'pino';
 import qrcodeTerminal from 'qrcode-terminal';
-import {fileURLToPath} from 'url';
-import path from 'path';
+
 
 class WhatsAppManager {
   constructor() {
@@ -13,19 +12,8 @@ class WhatsAppManager {
   }
 
   async createSession(sessionId) {
-
     try {
-
-      const __filename = fileURLToPath(import.meta.url);
-      const __dirname = path.dirname(__filename);
-
-      console.log('__dirname:', __dirname);
-
-
-      // const { state, saveCreds } = await WASocket.useMultiFileAuthState(`sessions/${sessionId}`);
-      const { state, saveCreds } = await WASocket.useMultiFileAuthState(
-          path.resolve(__dirname, 'sessions', sessionId)
-      );
+      const { state, saveCreds } = await WASocket.useMultiFileAuthState(`sessions/${sessionId}`);
 
       const socket = WASocket.default({
         auth: state,
@@ -37,14 +25,10 @@ class WhatsAppManager {
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
-          // console.log("Scan this QR code from your WhatsApp app:");
-          // qrcodeTerminal.generate(qr, { small: true }); // Cetak QR code secara visual di terminal
+          console.log("Scan this QR code from your WhatsApp app:");
+          qrcodeTerminal.generate(qr, { small: true }); // Cetak QR code secara visual di terminal
 
-          const qrUrl = await QRCode.toDataURL(qr, {
-            errorCorrectionLevel: 'L', // Koreksi kesalahan minimal
-            scale: 4,                  // Ukuran QR Code
-          });
-          console.log("Generated QR Code length:", qrUrl.length);
+          const qrUrl = await QRCode.toDataURL(qr); // Untuk keperluan lain, seperti front-end
           this.sessions.get(sessionId).qr = qrUrl;
         }
 
