@@ -62,16 +62,16 @@ Request body:
 
 1. Create a new session:
    - Method: POST
-   - URL: `http://localhost:3000/api/session/create/session1`
+   - URL: `http://localhost:2025/api/session/create/session1`
 
 2. Monitor session status:
    - Method: GET
-   - URL: `http://localhost:3000/api/session/session1`
+   - URL: `http://localhost:2025/api/session/session1`
    - Scan QR code when provided
 
 3. Send a message:
    - Method: POST
-   - URL: `http://localhost:3000/api/send/session1`
+   - URL: `http://localhost:2025/api/send/session1`
    - Body (JSON):
      ```json
      {
@@ -82,4 +82,4 @@ Request body:
 
 4. Delete session:
    - Method: DELETE
-   - URL: `http://localhost:3000/api/session/session1`
+   - URL: `http://localhost:2025/api/session/session1`
