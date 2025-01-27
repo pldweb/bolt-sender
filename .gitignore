@@ -7,7 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-src/whatsapp/sessions
+src/whatsapp/sessions/
 
 node_modules
 dist
