@@ -215,7 +215,7 @@ function App() {
           <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center">
               <MessageSquare className="h-8 w-8 text-green-500 mr-3" />
-              <h1 className="text-3xl font-bold text-gray-900">WhatsApp API Gateway</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Bolt Sender</h1>
             </div>
           </div>
         </header>
