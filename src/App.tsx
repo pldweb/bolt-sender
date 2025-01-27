@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import QRCode from 'react-qr-code';
-import { MessageSquare, Trash2, Edit2, Plus, Check, X } from 'lucide-react';
+import { MessageSquare, Trash2, Edit2, Plus, Check, X, Image, Send } from 'lucide-react';
 
 function App() {
   const [sessions, setSessions] = useState<Record<string, any>>({});
@@ -13,6 +13,9 @@ function App() {
   const [editingSession, setEditingSession] = useState<string | null>(null);
   const [newSessionName, setNewSessionName] = useState('');
   const [showNewNumberModal, setShowNewNumberModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const ip_address = '192.168.100.89';
   const API_BASE = `http://${ip_address}:2025/api`;
@@ -73,22 +76,66 @@ function App() {
     }
   };
 
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const sendMessage = async () => {
     if (!selectedSession) {
       alert('Please select a session first');
       return;
     }
 
-    if (!messageData.to || !messageData.message) {
-      alert('Please fill in both recipient number and message');
+    if (!messageData.to) {
+      alert('Please enter recipient number');
+      return;
+    }
+
+    if (!messageData.message && !selectedImage) {
+      alert('Please enter a message or select an image');
       return;
     }
 
     try {
-      const response = await axios.post(`${API_BASE}/send/${selectedSession}`, messageData);
+      const formData = new FormData();
+      formData.append('to', messageData.to);
+      if (messageData.message) {
+        formData.append('message', messageData.message);
+      }
+      if (selectedImage) {
+        formData.append('image', selectedImage);
+      }
+
+      const response = await axios.post(`${API_BASE}/send/${selectedSession}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
       if (response.data.success) {
         alert('Message sent successfully!');
         setMessageData({ to: '', message: '' });
+        removeSelectedImage();
       } else {
         alert(response.data.message);
       }
@@ -168,7 +215,7 @@ function App() {
           <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center">
               <MessageSquare className="h-8 w-8 text-green-500 mr-3" />
-              <h1 className="text-3xl font-bold text-gray-900">Bolt Sender</h1>
+              <h1 className="text-3xl font-bold text-gray-900">WhatsApp API Gateway</h1>
             </div>
           </div>
         </header>
@@ -298,9 +345,45 @@ function App() {
                             rows={4}
                             className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
+
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded transition-colors">
+                              <Image className="h-5 w-5" />
+                              Add Image
+                            </button>
+                            {imagePreview && (
+                                <button
+                                    onClick={removeSelectedImage}
+                                    className="text-red-500 hover:text-red-600">
+                                  <X className="h-5 w-5" />
+                                </button>
+                            )}
+                          </div>
+                          <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageSelect}
+                              className="hidden"
+                          />
+                          {imagePreview && (
+                              <div className="relative inline-block">
+                                <img
+                                    src={imagePreview}
+                                    alt="Preview"
+                                    className="max-w-xs rounded-lg shadow-md"
+                                />
+                              </div>
+                          )}
+                        </div>
+
                         <button
                             onClick={sendMessage}
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors">
+                            className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors">
+                          <Send className="h-5 w-5" />
                           Send Message
                         </button>
                       </div>
