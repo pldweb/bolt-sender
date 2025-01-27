@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import QRCode from 'react-qr-code';
 import { MessageSquare, Trash2, Edit2, Plus, Check, X, Image, Send } from 'lucide-react';
+import config from '../config.json';
+
 
 function App() {
   const [sessions, setSessions] = useState<Record<string, any>>({});
@@ -17,7 +19,7 @@ function App() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const ip_address = '192.168.100.89';
+  const ip_address = config.IP;
   const API_BASE = `http://${ip_address}:2025/api`;
 
   const createSession = async () => {
