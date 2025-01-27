@@ -365,7 +365,7 @@ function App() {
                           <input
                               ref={fileInputRef}
                               type="file"
-                              accept="image/*"
+                              accept="image/*, application/pdf, text/csv, .psd"
                               onChange={handleImageSelect}
                               className="hidden"
                           />
