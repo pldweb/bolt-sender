@@ -7,7 +7,7 @@ import routes from './routes/index.js';
 const app = express();
 const server = createServer(app);
 const port = process.env.PORT || 2025;
-const ip_address = '192.168.1.48';
+const ip_address = '192.168.100.89';
 
 // Initialize WhatsApp Manager
 export const whatsappManager = new WhatsAppManager();

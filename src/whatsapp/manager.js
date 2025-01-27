@@ -1,123 +1,157 @@
-import {default as WASocket} from '@whiskeysockets/baileys';
-import {Boom} from '@hapi/boom';
-import QRCode from 'qrcode';
+import { default as WASocket } from '@whiskeysockets/baileys';
+import { Boom } from '@hapi/boom';
 import pino from 'pino';
-import qrcodeTerminal from 'qrcode-terminal';
-import {fileURLToPath} from 'url';
+import { fileURLToPath } from 'url';
 import fs from 'fs';
 import path from 'path';
-
 
 class WhatsAppManager {
   constructor() {
     this.sessions = new Map();
     this.logger = pino({ level: 'silent' });
+    this.initializeSessionsDirectory();
     this.loadSessionsFromFiles();
   }
 
-  loadSessionsFromFiles() {
+  initializeSessionsDirectory() {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const sessionsPath = path.resolve(__dirname, 'sessions');
 
-    const sessionsPath = path.resolve(path.dirname(import.meta.url), 'sessions');
-    console.log("Loading sessions from path:", sessionsPath); // Debug
+    if (!fs.existsSync(sessionsPath)) {
+      fs.mkdirSync(sessionsPath, { recursive: true });
+    }
 
-    if (fs.existsSync(sessionsPath)) {
-      const sessionDirs = fs.readdirSync(sessionsPath); // Baca semua direktori sesi
-      sessionDirs.forEach(async (sessionId) => {
-        const sessionPath = path.resolve(sessionsPath, sessionId);
+    this.sessionsPath = sessionsPath;
+  }
+
+  async loadSessionsFromFiles() {
+    try {
+      console.log("Loading sessions from path:", this.sessionsPath);
+
+      if (!fs.existsSync(this.sessionsPath)) {
+        console.log("Sessions directory does not exist");
+        return;
+      }
+
+      const sessionDirs = fs.readdirSync(this.sessionsPath);
+
+      for (const sessionId of sessionDirs) {
+        const sessionPath = path.resolve(this.sessionsPath, sessionId);
+
         if (fs.lstatSync(sessionPath).isDirectory()) {
-          const { state, saveCreds } = await WASocket.useMultiFileAuthState(sessionPath);
-          this.sessions.set(sessionId, {
-            socket: WASocket.default({
-              auth: state,
-              logger: this.logger,
-            }),
-            status: 'connecting', // Status awal
-            qr: null,
-            // QR Code tidak relevan setelah sesi dimulai
-          });
-          console.log(`Session ${sessionId} reloaded from file.`);
+          try {
+            await this.restoreSession(sessionId, sessionPath);
+          } catch (error) {
+            console.error(`Failed to restore session ${sessionId}:`, error);
+          }
         }
-      });
-    } else {
-      console.log("No existing sessions found.");
+      }
+    } catch (error) {
+      console.error("Error loading sessions:", error);
     }
   }
 
-
-  async createSession(sessionId) {
-
+  async restoreSession(sessionId, sessionPath) {
     try {
-
-      const __filename = fileURLToPath(import.meta.url);
-      const __dirname = path.dirname(__filename);
-
-      console.log('__dirname:', __dirname);
-
-      // const { state, saveCreds } = await WASocket.useMultiFileAuthState(`sessions/${sessionId}`);
-      const { state, saveCreds } = await WASocket.useMultiFileAuthState(
-          path.resolve(__dirname, 'sessions', sessionId)
-      );
+      const { state, saveCreds } = await WASocket.useMultiFileAuthState(sessionPath);
 
       const socket = WASocket.default({
         auth: state,
-        printQRInTerminal: true,
-        logger: this.logger
+        logger: this.logger,
+        printQRInTerminal: false
       });
 
-      socket.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr } = update;
-
-        console.log("Connection update triggered:", update);
-
-        const session = this.sessions.get(sessionId); // Ambil sesi
-        console.log("Current session before update:", session);
-
-        if (qr) {
-          // console.log("Scan this QR code from your WhatsApp app:");
-          // qrcodeTerminal.generate(qr, { small: true });
-
-          console.log("Generated QR Code:", qr); // Log QR Code
-          session.qr = qr; // Simpan QR Code ke objek sesi
-          this.sessions.set(sessionId, session); // Pastikan diperbarui ke Map
-          console.log("QR Code saved to session:", this.sessions.get(sessionId).qr);
-        }
-
-        if (connection) {
-          session.status = connection; // Perbarui status koneksi
-          this.sessions.set(sessionId, session); // Perbarui sesi di Map
-          console.log(`Session ${sessionId} status updated to: ${connection}`);
-          console.log(`Session ${sessionId} updated in Map:`, this.sessions.get(sessionId));
-        }
-
-        if (connection === 'open') {
-          const userInfo = await socket.user; // Ambil informasi akun
-          session.user = {
-            id: userInfo.id,
-            name: userInfo.name,
-          };
-          this.sessions.set(sessionId, session);
-          console.log(`Session ${sessionId} is now active for user:`, session.user);
-        }
-
-        if (connection === 'close') {
-          console.log("Connection closed for session:", sessionId);
-          const shouldReconnect = (lastDisconnect?.error instanceof Boom) &&
-            lastDisconnect.error.output.statusCode !== 403;
-
-          if (shouldReconnect) {
-            await this.createSession(sessionId);
-          }
-        }
-
-        this.sessions.get(sessionId).status = connection;
-      });
-
-      socket.ev.on('creds.update', saveCreds);
+      this.setupSocketListeners(socket, sessionId, saveCreds);
 
       this.sessions.set(sessionId, {
         socket,
         status: 'connecting',
-        qr: null
+        qr: null,
+        user: null
+      });
+
+      console.log(`Session ${sessionId} restored successfully`);
+    } catch (error) {
+      throw new Error(`Failed to restore session: ${error.message}`);
+    }
+  }
+
+  setupSocketListeners(socket, sessionId, saveCreds) {
+    socket.ev.on('connection.update', async (update) => {
+      const { connection, lastDisconnect, qr } = update;
+      const session = this.sessions.get(sessionId);
+
+      if (!session) return;
+
+      console.log(`Connection update for ${sessionId}:`, update);
+
+      if (qr) {
+        session.qr = qr;
+        session.status = 'pending';
+        console.log(`QR Code updated for session ${sessionId}`);
+      }
+
+      if (connection) {
+        session.status = connection;
+
+        if (connection === 'open') {
+          try {
+            const userInfo = await socket.user;
+            session.user = {
+              id: userInfo.id,
+              name: userInfo.name
+            };
+            session.qr = null; // Clear QR code once connected
+            console.log(`Session ${sessionId} connected for user:`, session.user);
+          } catch (error) {
+            console.error(`Failed to fetch user info for ${sessionId}:`, error);
+          }
+        }
+
+        if (connection === 'close') {
+          const shouldReconnect = (lastDisconnect?.error instanceof Boom) &&
+              lastDisconnect.error.output.statusCode !== 403;
+
+          if (shouldReconnect) {
+            console.log(`Attempting to reconnect session ${sessionId}`);
+            await this.createSession(sessionId);
+          } else {
+            console.log(`Session ${sessionId} closed permanently`);
+            this.sessions.delete(sessionId);
+          }
+        }
+      }
+
+      this.sessions.set(sessionId, session);
+    });
+
+    socket.ev.on('creds.update', saveCreds);
+  }
+
+  async createSession(sessionId) {
+    try {
+      const sessionPath = path.resolve(this.sessionsPath, sessionId);
+
+      if (!fs.existsSync(sessionPath)) {
+        fs.mkdirSync(sessionPath, { recursive: true });
+      }
+
+      const { state, saveCreds } = await WASocket.useMultiFileAuthState(sessionPath);
+
+      const socket = WASocket.default({
+        auth: state,
+        logger: this.logger,
+        printQRInTerminal: false
+      });
+
+      this.setupSocketListeners(socket, sessionId, saveCreds);
+
+      this.sessions.set(sessionId, {
+        socket,
+        status: 'connecting',
+        qr: null,
+        user: null
       });
 
       return true;
@@ -130,13 +164,27 @@ class WhatsAppManager {
   async deleteSession(sessionId) {
     try {
       const session = this.sessions.get(sessionId);
-      if (session) {
-        await session.socket.logout();
-        await session.socket.end();
-        this.sessions.delete(sessionId);
-        return true;
+      if (!session) return false;
+
+      // Properly close the socket
+      if (session.socket) {
+        try {
+          await session.socket.logout();
+          await session.socket.end();
+        } catch (error) {
+          console.error(`Error closing socket for ${sessionId}:`, error);
+        }
       }
-      return false;
+
+      // Remove session files
+      const sessionPath = path.resolve(this.sessionsPath, sessionId);
+      if (fs.existsSync(sessionPath)) {
+        fs.rmSync(sessionPath, { recursive: true, force: true });
+      }
+
+      // Remove from memory
+      this.sessions.delete(sessionId);
+      return true;
     } catch (error) {
       console.error(`Failed to delete session ${sessionId}:`, error);
       return false;
@@ -151,12 +199,11 @@ class WhatsAppManager {
     const sessions = {};
     this.sessions.forEach((value, key) => {
       sessions[key] = {
-        status: value.status || 'Tidak ada sesi',
-        qr: value.qr || null,
-        user: value.user || null,         // Informasi pengguna (jika tersedia)
+        status: value.status || 'unknown',
+        qr: value.qr,
+        user: value.user
       };
     });
-    console.log("Returning all sessions:", sessions);
     return sessions;
   }
 
@@ -164,19 +211,26 @@ class WhatsAppManager {
     try {
       const session = this.sessions.get(sessionId);
       if (!session) {
-        throw new Error(`Session with ID '${sessionId}' not found`);
+        throw new Error(`Session ${sessionId} not found`);
       }
 
       if (!session.socket) {
-        throw new Error(`Session socket for '${sessionId}' is not initialized`);
+        throw new Error(`Socket not initialized for session ${sessionId}`);
       }
 
-      const jid = to.includes('@g.us') ? to : `${to}@s.whatsapp.net`;
+      if (session.status !== 'open') {
+        throw new Error(`Session ${sessionId} is not connected`);
+      }
 
-      console.log('Sending message to:', jid, 'with message:', message);
+      // Validate phone number format
+      const phoneNumber = to.replace(/[^0-9]/g, '');
+      if (!phoneNumber) {
+        throw new Error('Invalid phone number');
+      }
+
+      const jid = to.includes('@g.us') ? to : `${phoneNumber}@s.whatsapp.net`;
 
       await session.socket.sendMessage(jid, { text: message });
-
       return true;
     } catch (error) {
       console.error(`Failed to send message for session ${sessionId}:`, error);

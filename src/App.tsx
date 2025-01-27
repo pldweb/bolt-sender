@@ -1,62 +1,66 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-// import  QRCodeCanvas  from 'qrcode.react';
-import  QRCode  from 'react-qr-code';
-
+import QRCode from 'react-qr-code';
+import { MessageSquare, Trash2 } from 'lucide-react';
 
 function App() {
-  const [sessions, setSessions] = useState([]);
-  const [qrCode, setQrCode] = useState(null);
+  const [sessions, setSessions] = useState<Record<string, any>>({});
+  const [qrCode, setQrCode] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState('');
   const [messageData, setMessageData] = useState({ to: '', message: '' });
-  // const [refreshInterval, setRefreshInterval] = useState(null);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [selectedSession, setSelectedSession] = useState('');
 
-  const ip_address = '192.168.1.48';
+  const ip_address = '192.168.100.89';
+  const API_BASE = `http://${ip_address}:2025/api`;
 
-  // create sesi
   const createSession = async () => {
+    if (!sessionId.trim()) {
+      alert('Please enter a session ID');
+      return;
+    }
+
     try {
-      const response = await axios.post(`http://${ip_address}:2025/api/session/create/${sessionId}`);
+      const response = await axios.post(`${API_BASE}/session/create/${sessionId}`);
       if (response.data.success) {
         fetchQrCode(sessionId);
         fetchSessions();
+        setSelectedSession(sessionId);
         setSessionId('');
       } else {
         alert(response.data.message);
       }
     } catch (error) {
       console.error('Failed to create session:', error);
+      alert('Failed to create session. Please try again.');
     }
   };
 
   const fetchSessions = async () => {
     try {
-      const response = await axios.get(`http://${ip_address}:2025/api/sessions`);
-      console.log('Sessions fetched from API:', response.data); // Log respons API
-      setSessions(response.data.data || []);
+      const response = await axios.get(`${API_BASE}/sessions`);
+      if (response.data.success) {
+        setSessions(response.data.data);
+      }
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
     }
   };
 
-  // Fetch QR
-  const fetchQrCode = async (id: any) => {
-    let retries = 10; // Coba 10 kali
-    const delay = (ms: any) => new Promise((resolve) => setTimeout(resolve, ms));
+  const fetchQrCode = async (id: string) => {
+    let retries = 10;
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     while (retries > 0) {
       try {
-        const response = await axios.get(`http://${ip_address}:2025/api/session/${id}`);
+        const response = await axios.get(`${API_BASE}/session/${id}`);
         if (response.data.success) {
           if (response.data.data.qr) {
-            setQrCode(response.data.data.qr); // QR Code ditemukan, set state
-            console.log('QR Code fetched:', response.data);
-            return; // Keluar dari loop
+            setQrCode(response.data.data.qr);
+            return;
           }
-          console.log('QR Code not ready, retrying...');
         }
-        await delay(1000); // Tunggu 1 detik sebelum mencoba lagi
+        await delay(1000);
         retries--;
       } catch (error) {
         console.error('Failed to fetch QR Code:', error);
@@ -65,10 +69,19 @@ function App() {
     }
   };
 
-  // Send Message
   const sendMessage = async () => {
+    if (!selectedSession) {
+      alert('Please select a session first');
+      return;
+    }
+
+    if (!messageData.to || !messageData.message) {
+      alert('Please fill in both recipient number and message');
+      return;
+    }
+
     try {
-      const response = await axios.post(`http://${ip_address}:2025/api/send/${sessionId}`, messageData);
+      const response = await axios.post(`${API_BASE}/send/${selectedSession}`, messageData);
       if (response.data.success) {
         alert('Message sent successfully!');
         setMessageData({ to: '', message: '' });
@@ -77,117 +90,150 @@ function App() {
       }
     } catch (error) {
       console.error('Failed to send message:', error);
+      alert('Failed to send message. Please try again.');
     }
   };
 
-  // Delete Sesi
-  const deleteSession = async (id: any) => {
+  const deleteSession = async (id: string) => {
     try {
-      const response = await axios.delete(`http://${ip_address}:2025/api/session/${id}`);
+      const response = await axios.delete(`${API_BASE}/session/${id}`);
       if (response.data.success) {
         fetchSessions();
+        if (selectedSession === id) {
+          setSelectedSession('');
+          setQrCode(null);
+        }
       } else {
         alert(response.data.message);
       }
     } catch (error) {
       console.error('Failed to delete session:', error);
+      alert('Failed to delete session. Please try again.');
     }
   };
 
-
   useEffect(() => {
     fetchSessions();
+    const interval = setInterval(fetchSessions, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    console.log('QR Code state updated:', qrCode); // Log saat state berubah
-  }, [qrCode]);
-
-  useEffect(() => {
-    if (refreshInterval) clearInterval(refreshInterval); // Clear previous interval if any
-    const interval = setInterval(() => {
-      if (sessionId) fetchQrCode(sessionId);
-    }, 60000); // 1 minute interval
-    setRefreshInterval(interval); // Store the interval id
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, [sessionId]);
+    if (refreshInterval) clearInterval(refreshInterval);
+    if (selectedSession) {
+      const interval = setInterval(() => {
+        fetchQrCode(selectedSession);
+      }, 60000);
+      setRefreshInterval(interval);
+      return () => clearInterval(interval);
+    }
+  }, [selectedSession]);
 
   return (
       <div className="min-h-screen bg-gray-100">
         <header className="bg-white shadow">
           <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <h1 className="text-3xl font-bold text-gray-900">WhatsApp API Gateway</h1>
+            <div className="flex items-center">
+              <MessageSquare className="h-8 w-8 text-green-500 mr-3" />
+              <h1 className="text-3xl font-bold text-gray-900">WhatsApp API Gateway</h1>
+            </div>
           </div>
         </header>
 
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="bg-white p-6 shadow rounded-lg">
-            <h2 className="text-2xl font-bold mb-4">Manage Sessions</h2>
-            <input
-                type="text"
-                value={sessionId}
-                onChange={(e) => setSessionId(e.target.value)}
-                placeholder="Enter session ID"
-                className="border p-2 rounded mb-4 w-full"
-            />
-            <button
-                onClick={createSession}
-                className="bg-green-500 text-white px-4 py-2 rounded mr-2">
-              Create Session
-            </button>
-
-            {qrCode ? (
-                <div>
-                  <h3 className="text-lg font-medium mt-4">Scan QR Code:</h3>
-                  <QRCode value={qrCode} size={256} level="L"/>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h2 className="text-2xl font-bold mb-4">Manage Sessions</h2>
+                <div className="flex gap-2 mb-4">
+                  <input
+                      type="text"
+                      value={sessionId}
+                      onChange={(e) => setSessionId(e.target.value)}
+                      placeholder="Enter session ID"
+                      className="flex-1 border border-gray-300 p-2 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <button
+                      onClick={createSession}
+                      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors">
+                    Create Session
+                  </button>
                 </div>
-            ) : (
-                <p className="text-gray-500 mt-4">No QR Code available. Create a session first.</p>
-            )}
 
-            <h2 className="text-2xl font-bold mt-6 mb-4">Active Sessions</h2>
-            <ul>
-              {Array.isArray(sessions) && sessions.length > 0 ? (
-                  sessions.map((session) => (
-                      <li key={session.id} className="flex justify-between items-center mb-2">
-                        <span>
-                          {session.user
-                              ? `${session.user.name} (${session.user.id})`
-                              : "Unknown User"}
-                          - {session.status}
+                <h3 className="text-xl font-semibold mb-3">Active Sessions</h3>
+                <div className="space-y-2">
+                  {Object.entries(sessions).length > 0 ? (
+                      Object.entries(sessions).map(([id, data]: [string, any]) => (
+                          <div key={id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                            <div>
+                              <span className="font-medium">{id}</span>
+                              <span className={`ml-2 px-2 py-1 text-xs rounded ${
+                                  data.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                          {data.status}
                         </span>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                  onClick={() => {
+                                    setSelectedSession(id);
+                                    fetchQrCode(id);
+                                  }}
+                                  className="text-blue-500 hover:text-blue-600">
+                                Select
+                              </button>
+                              <button
+                                  onClick={() => deleteSession(id)}
+                                  className="text-red-500 hover:text-red-600">
+                                <Trash2 className="h-5 w-5" />
+                              </button>
+                            </div>
+                          </div>
+                      ))
+                  ) : (
+                      <p className="text-gray-500">No active sessions available.</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                {selectedSession && (
+                    <>
+                      <h2 className="text-2xl font-bold mb-4">Send Message</h2>
+                      <div className="space-y-3">
+                        <input
+                            type="text"
+                            value={messageData.to}
+                            onChange={(e) => setMessageData({...messageData, to: e.target.value})}
+                            placeholder="Recipient Number (e.g., 6281234567890)"
+                            className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <textarea
+                            value={messageData.message}
+                            onChange={(e) => setMessageData({...messageData, message: e.target.value})}
+                            placeholder="Message"
+                            rows={4}
+                            className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
                         <button
-                            onClick={() => deleteSession(session.id)}
-                            className="bg-red-500 text-white px-4 py-2 rounded">
-                          Delete
+                            onClick={sendMessage}
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors">
+                          Send Message
                         </button>
-                      </li>
-                  ))
-              ) : (
-                  <li className="text-gray-500">No active sessions available.</li>
-              )}
-            </ul>
+                      </div>
+                    </>
+                )}
 
-
-            <h2 className="text-2xl font-bold mt-6 mb-4">Send Message</h2>
-            <input
-                type="text"
-                value={messageData.to}
-                onChange={(e) => setMessageData({...messageData, to: e.target.value})}
-                placeholder="Recipient Number"
-                className="border p-2 rounded mb-2 w-full"
-            />
-            <textarea
-                value={messageData.message}
-                onChange={(e) => setMessageData({...messageData, message: e.target.value})}
-                placeholder="Message"
-                className="border p-2 rounded mb-2 w-full"
-            />
-            <button
-                onClick={sendMessage}
-                className="bg-blue-500 text-white px-4 py-2 rounded">
-              Send Message
-            </button>
+                {qrCode && (
+                    <div className="mt-6">
+                      <h3 className="text-xl font-semibold mb-3">Scan QR Code</h3>
+                      <div className="bg-white p-4 inline-block rounded-lg shadow">
+                        <QRCode value={qrCode} size={256} level="L" />
+                      </div>
+                    </div>
+                )}
+              </div>
+            </div>
           </div>
         </main>
       </div>
