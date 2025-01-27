@@ -207,7 +207,7 @@ class WhatsAppManager {
     return sessions;
   }
 
-  async sendMessage(sessionId, to, message) {
+  async sendMessage(sessionId, to, message, image = null) {
     try {
       const session = this.sessions.get(sessionId);
       if (!session) {
@@ -230,7 +230,16 @@ class WhatsAppManager {
 
       const jid = to.includes('@g.us') ? to : `${phoneNumber}@s.whatsapp.net`;
 
-      await session.socket.sendMessage(jid, { text: message });
+      if (image){
+        await session.socket.sendMessage(jid, {
+          image: image.buffer,
+          caption: message || undefined,
+          mimetype: image.mimetype
+        });
+      } else if(message){
+        await session.socket.sendMessage(jid, { text: message });
+      }
+
       return true;
     } catch (error) {
       console.error(`Failed to send message for session ${sessionId}:`, error);

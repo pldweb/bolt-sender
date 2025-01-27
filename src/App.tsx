@@ -292,9 +292,7 @@ function App() {
                                     <span className="font-medium">{id}</span>
                                     <span className={`px-2 py-1 text-xs rounded ${
                                         data.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                    }`}>
-                              {data.status}
-                            </span>
+                                    }`}>{data.status}</span>
                                   </div>
                               )}
                             </div>
