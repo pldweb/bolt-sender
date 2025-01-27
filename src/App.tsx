@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import QRCode from 'react-qr-code';
-import { MessageSquare, Trash2 } from 'lucide-react';
+import { MessageSquare, Trash2, Edit2, Plus, Check, X } from 'lucide-react';
 
 function App() {
   const [sessions, setSessions] = useState<Record<string, any>>({});
@@ -10,13 +10,16 @@ function App() {
   const [messageData, setMessageData] = useState({ to: '', message: '' });
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const [selectedSession, setSelectedSession] = useState('');
+  const [editingSession, setEditingSession] = useState<string | null>(null);
+  const [newSessionName, setNewSessionName] = useState('');
+  const [showNewNumberModal, setShowNewNumberModal] = useState(false);
 
   const ip_address = '192.168.100.89';
   const API_BASE = `http://${ip_address}:2025/api`;
 
   const createSession = async () => {
     if (!sessionId.trim()) {
-      alert('Please enter a session ID');
+      alert('Please enter a session name');
       return;
     }
 
@@ -27,6 +30,7 @@ function App() {
         fetchSessions();
         setSelectedSession(sessionId);
         setSessionId('');
+        setShowNewNumberModal(false);
       } else {
         alert(response.data.message);
       }
@@ -112,6 +116,35 @@ function App() {
     }
   };
 
+  const startEditingSession = (id: string, currentName: string) => {
+    setEditingSession(id);
+    setNewSessionName(currentName);
+  };
+
+  const updateSessionName = async (oldId: string) => {
+    if (!newSessionName.trim() || newSessionName === oldId) {
+      setEditingSession(null);
+      return;
+    }
+
+    try {
+      // First create a new session with the new name
+      const createResponse = await axios.post(`${API_BASE}/session/create/${newSessionName}`);
+      if (createResponse.data.success) {
+        // Then delete the old session
+        await deleteSession(oldId);
+        setEditingSession(null);
+        fetchSessions();
+        if (selectedSession === oldId) {
+          setSelectedSession(newSessionName);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update session name:', error);
+      alert('Failed to update session name. Please try again.');
+    }
+  };
+
   useEffect(() => {
     fetchSessions();
     const interval = setInterval(fetchSessions, 5000);
@@ -144,44 +177,94 @@ function App() {
           <div className="bg-white p-6 shadow rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h2 className="text-2xl font-bold mb-4">Manage Sessions</h2>
-                <div className="flex gap-2 mb-4">
-                  <input
-                      type="text"
-                      value={sessionId}
-                      onChange={(e) => setSessionId(e.target.value)}
-                      placeholder="Enter session ID"
-                      className="flex-1 border border-gray-300 p-2 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold">Manage Numbers</h2>
                   <button
-                      onClick={createSession}
-                      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors">
-                    Create Session
+                      onClick={() => setShowNewNumberModal(true)}
+                      className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors">
+                    <Plus className="h-5 w-5" />
+                    Add New Number
                   </button>
                 </div>
 
-                <h3 className="text-xl font-semibold mb-3">Active Sessions</h3>
+                {showNewNumberModal && (
+                    <div className="mb-4">
+                      <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={sessionId}
+                            onChange={(e) => setSessionId(e.target.value)}
+                            placeholder="Enter number name"
+                            className="flex-1 border border-gray-300 p-2 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                        <button
+                            onClick={createSession}
+                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors">
+                          Create
+                        </button>
+                        <button
+                            onClick={() => {
+                              setShowNewNumberModal(false);
+                              setSessionId('');
+                            }}
+                            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                )}
+
                 <div className="space-y-2">
                   {Object.entries(sessions).length > 0 ? (
                       Object.entries(sessions).map(([id, data]: [string, any]) => (
                           <div key={id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                            <div>
-                              <span className="font-medium">{id}</span>
-                              <span className={`ml-2 px-2 py-1 text-xs rounded ${
-                                  data.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                          {data.status}
-                        </span>
+                            <div className="flex-1">
+                              {editingSession === id ? (
+                                  <div className="flex gap-2 items-center">
+                                    <input
+                                        type="text"
+                                        value={newSessionName}
+                                        onChange={(e) => setNewSessionName(e.target.value)}
+                                        className="border border-gray-300 p-1 rounded flex-1"
+                                    />
+                                    <button
+                                        onClick={() => updateSessionName(id)}
+                                        className="text-green-500 hover:text-green-600">
+                                      <Check className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => setEditingSession(null)}
+                                        className="text-red-500 hover:text-red-600">
+                                      <X className="h-5 w-5" />
+                                    </button>
+                                  </div>
+                              ) : (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{id}</span>
+                                    <span className={`px-2 py-1 text-xs rounded ${
+                                        data.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                              {data.status}
+                            </span>
+                                  </div>
+                              )}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 ml-4">
                               <button
                                   onClick={() => {
                                     setSelectedSession(id);
                                     fetchQrCode(id);
                                   }}
-                                  className="text-blue-500 hover:text-blue-600">
+                                  className="text-blue-500 hover:text-blue-600 px-3 py-1 rounded">
                                 Select
                               </button>
+                              {!editingSession && (
+                                  <button
+                                      onClick={() => startEditingSession(id, id)}
+                                      className="text-gray-500 hover:text-gray-600">
+                                    <Edit2 className="h-5 w-5" />
+                                  </button>
+                              )}
                               <button
                                   onClick={() => deleteSession(id)}
                                   className="text-red-500 hover:text-red-600">
@@ -191,7 +274,7 @@ function App() {
                           </div>
                       ))
                   ) : (
-                      <p className="text-gray-500">No active sessions available.</p>
+                      <p className="text-gray-500">No active numbers available.</p>
                   )}
                 </div>
               </div>
