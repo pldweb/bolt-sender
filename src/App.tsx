@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { QRCodeCanvas } from 'qrcode.react';
-import { QRCode } from 'react-qr-code';
+// import  QRCodeCanvas  from 'qrcode.react';
+import  QRCode  from 'react-qr-code';
 
 
 function App() {
@@ -12,11 +12,12 @@ function App() {
   // const [refreshInterval, setRefreshInterval] = useState(null);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
 
+  const ip_address = '192.168.1.48';
 
   // create sesi
   const createSession = async () => {
     try {
-      const response = await axios.post(`http://192.168.100.89:2025/api/session/create/${sessionId}`);
+      const response = await axios.post(`http://${ip_address}:2025/api/session/create/${sessionId}`);
       if (response.data.success) {
         fetchQrCode(sessionId);
         fetchSessions();
@@ -31,8 +32,9 @@ function App() {
 
   const fetchSessions = async () => {
     try {
-      const response = await axios.get('http://192.168.100.89:2025/api/sessions');
-      setSessions(response.data || []);
+      const response = await axios.get(`http://${ip_address}:2025/api/sessions`);
+      console.log('Sessions fetched from API:', response.data); // Log respons API
+      setSessions(response.data.data || []);
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
     }
@@ -45,7 +47,7 @@ function App() {
 
     while (retries > 0) {
       try {
-        const response = await axios.get(`http://192.168.100.89:2025/api/session/${id}`);
+        const response = await axios.get(`http://${ip_address}:2025/api/session/${id}`);
         if (response.data.success) {
           if (response.data.data.qr) {
             setQrCode(response.data.data.qr); // QR Code ditemukan, set state
@@ -61,23 +63,12 @@ function App() {
         return;
       }
     }
-
-    // try {
-    //   console.log(sessionId)
-    //   const response = await axios.get(`http://192.168.100.89:2025/api/session/${sessionId}`);
-    //   if (response.data.success) {
-    //     setQrCode(response.data.qr);
-    //     console.log('Berhasil ambil QR Code', response.data);
-    //   }
-    // } catch (error) {
-    //   console.error('Failed to fetch QR Code:', error);
-    // }
   };
 
   // Send Message
   const sendMessage = async () => {
     try {
-      const response = await axios.post(`http://192.168.100.89:2025/api/send/${sessionId}`, messageData);
+      const response = await axios.post(`http://${ip_address}:2025/api/send/${sessionId}`, messageData);
       if (response.data.success) {
         alert('Message sent successfully!');
         setMessageData({ to: '', message: '' });
@@ -92,7 +83,7 @@ function App() {
   // Delete Sesi
   const deleteSession = async (id: any) => {
     try {
-      const response = await axios.delete(`http://192.168.100.89:2025/api/session/${id}`);
+      const response = await axios.delete(`http://${ip_address}:2025/api/session/${id}`);
       if (response.data.success) {
         fetchSessions();
       } else {
@@ -148,7 +139,7 @@ function App() {
             {qrCode ? (
                 <div>
                   <h3 className="text-lg font-medium mt-4">Scan QR Code:</h3>
-                  <QRCode value={qrCode} size={256} />
+                  <QRCode value={qrCode} size={256} level="L"/>
                 </div>
             ) : (
                 <p className="text-gray-500 mt-4">No QR Code available. Create a session first.</p>
@@ -159,7 +150,12 @@ function App() {
               {Array.isArray(sessions) && sessions.length > 0 ? (
                   sessions.map((session) => (
                       <li key={session.id} className="flex justify-between items-center mb-2">
-                        <span>{session.id} - {session.status}</span>
+                        <span>
+                          {session.user
+                              ? `${session.user.name} (${session.user.id})`
+                              : "Unknown User"}
+                          - {session.status}
+                        </span>
                         <button
                             onClick={() => deleteSession(session.id)}
                             className="bg-red-500 text-white px-4 py-2 rounded">

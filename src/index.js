@@ -7,6 +7,7 @@ import routes from './routes/index.js';
 const app = express();
 const server = createServer(app);
 const port = process.env.PORT || 2025;
+const ip_address = '192.168.1.48';
 
 // Initialize WhatsApp Manager
 export const whatsappManager = new WhatsAppManager();
@@ -21,9 +22,9 @@ app.use('/api', routes);
 
 // Health check
 app.get('/', (req, res) => {
-  res.json({ status: 'WhatsApp API Gateway is running' });
+  res.json({ status: 'Bolt Sender is running' });
 });
 
-server.listen(port, '192.168.100.89', () => {
-  console.log(`Server running on port ${port}`);
+server.listen(port, ip_address, () => {
+  console.log(`Bolt Sender berjalan di http://${ip_address} port ${port}`);
 });

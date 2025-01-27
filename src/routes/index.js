@@ -6,7 +6,8 @@ const router = Router();
 // Create new WhatsApp session
 router.post('/session/create/:sessionId', async (req, res) => {
   const { sessionId } = req.params;
-  
+
+  // Jika sesi sudah ada
   if (whatsappManager.getSession(sessionId)) {
     return res.status(400).json({
       success: false,
@@ -15,7 +16,6 @@ router.post('/session/create/:sessionId', async (req, res) => {
   }
 
   const success = await whatsappManager.createSession(sessionId);
-  
   res.json({
     success,
     message: success ? 'Session created successfully' : 'Failed to create session'
@@ -57,6 +57,7 @@ router.get('/session/:sessionId', (req, res) => {
 // Get all sessions
 router.get('/sessions', (req, res) => {
   const sessions = whatsappManager.getAllSessions();
+  console.log('Returning session', sessions)
   
   res.json({
     success: true,
