@@ -24,7 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', routes);
 
 // Health check
-app.get('/', (req, res) => {
+app.get('/be', (req, res) => {
   res.json({ status: 'Bolt Sender is running' });
 });
 
