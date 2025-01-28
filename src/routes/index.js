@@ -10,18 +10,17 @@ const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|gif|pdf|csv|webp/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx|csv|txt/;
+    const mimetype = allowedTypes.test(file.mimetype);
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
 
     if (mimetype && extname) {
       return cb(null, true);
     }
-
-    cb(new Error('Only image files are allowed!'));
+    cb(new Error('Invalid file type. Allowed types: images, PDF, DOC, XLS, CSV, TXT'));
   },
 });
 
@@ -87,10 +86,10 @@ router.get('/sessions', (req, res) => {
 });
 
 // Updated send message route to handle images
-router.post('/send/:sessionId', upload.single('image'), async (req, res) => {
+router.post('/send/:sessionId', upload.single('file'), async (req, res) => {
   const { sessionId } = req.params;
   const { to, message } = req.body;
-  const image = req.file;
+  const file = req.file;
 
   if (!to) {
     return res.status(400).json({
@@ -99,15 +98,15 @@ router.post('/send/:sessionId', upload.single('image'), async (req, res) => {
     });
   }
 
-  if (!message && !image) {
+  if (!message && !file) {
     return res.status(400).json({
       success: false,
-      message: 'Either message or image is required'
+      message: 'Either message or file is required'
     });
   }
 
   try {
-    const success = await whatsappManager.sendMessage(sessionId, to, message, image);
+    const success = await whatsappManager.sendMessage(sessionId, to, message, file);
 
     res.json({
       success,

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import QRCode from 'react-qr-code';
-import { MessageSquare, Trash2, Edit2, Plus, Check, X, Image, Send } from 'lucide-react';
+import { MessageSquare, Trash2, Edit2, Plus, Check, X, Send, Paperclip } from 'lucide-react';
 import config from '../config.json';
 
 
@@ -15,9 +15,10 @@ function App() {
   const [editingSession, setEditingSession] = useState<string | null>(null);
   const [newSessionName, setNewSessionName] = useState('');
   const [showNewNumberModal, setShowNewNumberModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const ip_address = config.IP;
   const API_BASE = `http://${ip_address}:2025/api`;
@@ -78,25 +79,31 @@ function App() {
     }
   };
 
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert('Image size should be less than 5MB');
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        alert('File size should be less than 10MB');
         return;
       }
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setSelectedFile(file);
+
+      // Only create preview for images
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFilePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setFilePreview(null);
+      }
     }
   };
 
-  const removeSelectedImage = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -113,8 +120,8 @@ function App() {
       return;
     }
 
-    if (!messageData.message && !selectedImage) {
-      alert('Please enter a message or select an image');
+    if (!messageData.message && !selectedFile) {
+      alert('Please enter a message or select a file');
       return;
     }
 
@@ -124,8 +131,8 @@ function App() {
       if (messageData.message) {
         formData.append('message', messageData.message);
       }
-      if (selectedImage) {
-        formData.append('image', selectedImage);
+      if (selectedFile) {
+        formData.append('file', selectedFile);
       }
 
       const response = await axios.post(`${API_BASE}/send/${selectedSession}`, formData, {
@@ -137,7 +144,7 @@ function App() {
       if (response.data.success) {
         alert('Message sent successfully!');
         setMessageData({ to: '', message: '' });
-        removeSelectedImage();
+        removeSelectedFile();
       } else {
         alert(response.data.message);
       }
@@ -146,6 +153,7 @@ function App() {
       alert('Failed to send message. Please try again.');
     }
   };
+
 
   const deleteSession = async (id: string) => {
     try {
@@ -228,9 +236,7 @@ function App() {
               <div>
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-2xl font-bold">Manage Numbers</h2>
-                  <button
-                      onClick={() => setShowNewNumberModal(true)}
-                      className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors">
+                  <button onClick={() => setShowNewNumberModal(true)} className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors">
                     <Plus className="h-5 w-5" />
                     Add New Number
                   </button>
@@ -239,24 +245,11 @@ function App() {
                 {showNewNumberModal && (
                     <div className="mb-4">
                       <div className="flex gap-2">
-                        <input
-                            type="text"
-                            value={sessionId}
-                            onChange={(e) => setSessionId(e.target.value)}
-                            placeholder="Enter number name"
-                            className="flex-1 border border-gray-300 p-2 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        />
-                        <button
-                            onClick={createSession}
-                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors">
+                        <input type="text" value={sessionId} onChange={(e) => setSessionId(e.target.value)} placeholder="Enter number name" className="flex-1 border border-gray-300 p-2 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"/>
+                        <button onClick={createSession} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors">
                           Create
                         </button>
-                        <button
-                            onClick={() => {
-                              setShowNewNumberModal(false);
-                              setSessionId('');
-                            }}
-                            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors">
+                        <button onClick={() => {setShowNewNumberModal(false);setSessionId('');}} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors">
                           Cancel
                         </button>
                       </div>
@@ -270,20 +263,11 @@ function App() {
                             <div className="flex-1">
                               {editingSession === id ? (
                                   <div className="flex gap-2 items-center">
-                                    <input
-                                        type="text"
-                                        value={newSessionName}
-                                        onChange={(e) => setNewSessionName(e.target.value)}
-                                        className="border border-gray-300 p-1 rounded flex-1"
-                                    />
-                                    <button
-                                        onClick={() => updateSessionName(id)}
-                                        className="text-green-500 hover:text-green-600">
+                                    <input type="text" value={newSessionName} onChange={(e) => setNewSessionName(e.target.value)} className="border border-gray-300 p-1 rounded flex-1"/>
+                                    <button onClick={() => updateSessionName(id)} className="text-green-500 hover:text-green-600">
                                       <Check className="h-5 w-5" />
                                     </button>
-                                    <button
-                                        onClick={() => setEditingSession(null)}
-                                        className="text-red-500 hover:text-red-600">
+                                    <button onClick={() => setEditingSession(null)} className="text-red-500 hover:text-red-600">
                                       <X className="h-5 w-5" />
                                     </button>
                                   </div>
@@ -297,24 +281,16 @@ function App() {
                               )}
                             </div>
                             <div className="flex gap-2 ml-4">
-                              <button
-                                  onClick={() => {
-                                    setSelectedSession(id);
-                                    fetchQrCode(id);
-                                  }}
-                                  className="text-blue-500 hover:text-blue-600 px-3 py-1 rounded">
+                              <button onClick={() => {setSelectedSession(id);fetchQrCode(id);
+                                  }} className="text-blue-500 hover:text-blue-600 px-3 py-1 rounded">
                                 Select
                               </button>
                               {!editingSession && (
-                                  <button
-                                      onClick={() => startEditingSession(id, id)}
-                                      className="text-gray-500 hover:text-gray-600">
+                                  <button onClick={() => startEditingSession(id, id)} className="text-gray-500 hover:text-gray-600">
                                     <Edit2 className="h-5 w-5" />
                                   </button>
                               )}
-                              <button
-                                  onClick={() => deleteSession(id)}
-                                  className="text-red-500 hover:text-red-600">
+                              <button onClick={() => deleteSession(id)} className="text-red-500 hover:text-red-600">
                                 <Trash2 className="h-5 w-5" />
                               </button>
                             </div>
@@ -331,59 +307,59 @@ function App() {
                     <>
                       <h2 className="text-2xl font-bold mb-4">Send Message</h2>
                       <div className="space-y-3">
-                        <input
-                            type="text"
-                            value={messageData.to}
-                            onChange={(e) => setMessageData({...messageData, to: e.target.value})}
-                            placeholder="Recipient Number (e.g., 6281234567890)"
-                            className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        <input type="text" value={messageData.to}
+                               onChange={(e) => setMessageData({...messageData, to: e.target.value})}
+                               placeholder="Recipient Number (e.g., 6281234567890)"
+                               className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
-                        <textarea
-                            value={messageData.message}
-                            onChange={(e) => setMessageData({...messageData, message: e.target.value})}
-                            placeholder="Message"
-                            rows={4}
-                            className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        <textarea value={messageData.message}
+                                  onChange={(e) => setMessageData({...messageData, message: e.target.value})}
+                                  placeholder="Message" rows={4}
+                                  className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
 
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded transition-colors">
-                              <Image className="h-5 w-5" />
-                              Add Image
+                                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded transition-colors"
+                            >
+                              <Paperclip className="h-5 w-5"/>
+                              Attach File
                             </button>
-                            {imagePreview && (
-                                <button
-                                    onClick={removeSelectedImage}
-                                    className="text-red-500 hover:text-red-600">
-                                  <X className="h-5 w-5" />
-                                </button>
+                            {selectedFile && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-gray-600">{selectedFile.name}</span>
+                                  <button
+                                      onClick={removeSelectedFile}
+                                      className="text-red-500 hover:text-red-600"
+                                  >
+                                    <X className="h-5 w-5"/>
+                                  </button>
+                                </div>
                             )}
                           </div>
                           <input
                               ref={fileInputRef}
                               type="file"
-                              accept="image/*, application/pdf, text/csv, .psd"
-                              onChange={handleImageSelect}
+                              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                              onChange={handleFileSelect}
                               className="hidden"
                           />
-                          {imagePreview && (
+                          {filePreview && (
                               <div className="relative inline-block">
                                 <img
-                                    src={imagePreview}
+                                    src={filePreview}
                                     alt="Preview"
                                     className="max-w-xs rounded-lg shadow-md"
                                 />
                               </div>
                           )}
                         </div>
-
                         <button
                             onClick={sendMessage}
                             className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors">
-                          <Send className="h-5 w-5" />
+                          <Send className="h-5 w-5"/>
                           Send Message
                         </button>
                       </div>
@@ -394,7 +370,7 @@ function App() {
                     <div className="mt-6">
                       <h3 className="text-xl font-semibold mb-3">Scan QR Code</h3>
                       <div className="bg-white p-4 inline-block rounded-lg shadow">
-                        <QRCode value={qrCode} size={256} level="L" />
+                        <QRCode value={qrCode} size={256} level="L"/>
                       </div>
                     </div>
                 )}
