@@ -312,9 +312,7 @@ function App() {
                                placeholder="Recipient Number (e.g., 6281234567890)"
                                className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
-                        <textarea value={messageData.message}
-                                  onChange={(e) => setMessageData({...messageData, message: e.target.value})}
-                                  placeholder="Message" rows={4}
+                        <textarea value={messageData.message} onChange={(e) => setMessageData({...messageData, message: e.target.value})} placeholder="Message" rows={4}
                                   className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
 
