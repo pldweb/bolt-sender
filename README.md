@@ -89,3 +89,42 @@ Request body:
 4. Delete session:
    - Method: DELETE
    - URL: `http://localhost:2025/api/session/session1`
+
+
+# Authentication
+POST /auth/register
+```json
+{
+"username": "user1",
+"email": "user1@example.com",
+"password": "password123"
+}
+```
+
+POST /auth/login
+```json
+{
+"email": "user1@example.com",
+"password": "password123"
+}
+```
+
+# WhatsApp API (requires API key in header: X-API-Key)
+POST /api/v1/session/create
+```json
+{
+"sessionName": "session1"
+}
+```
+GET /api/v1/session/:sessionName
+
+POST /api/v1/send/:sessionName
+```json
+{
+"to": "6281234567890",
+"message": "Hello"
+}
+```
+
+
+DELETE /api/v1/session/:sessionName

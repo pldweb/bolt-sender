@@ -4,7 +4,7 @@ import QRCode from 'react-qr-code';
 import { MessageSquare, Trash2, Edit2, Plus, Check, X, Send, Paperclip } from 'lucide-react';
 import config from '../config.json';
 
-function App() {
+function Appssss() {
   const [sessions, setSessions] = useState({});
   const [qrCode, setQrCode] = useState(null);
   const [sessionId, setSessionId] = useState('');
@@ -421,4 +421,4 @@ function App() {
   );
 }
 
-export default App;
+export default Appssss;

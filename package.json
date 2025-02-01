@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
+    "server": "node backend/server.js",
+    "frontend": "vite --host",
+    "dev": "node backend/server.js && vite --host",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
@@ -12,9 +14,15 @@
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^6.7.9",
+    "axios": "^1.7.9",
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.284.0",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.12.0",
     "pino": "^9.6.0",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
@@ -23,9 +31,7 @@
     "react-dom": "^18.2.0",
     "react-qr-code": "^2.0.15",
     "react-router-dom": "^7.1.3",
-    "react-toastify": "^11.0.3",
-    "multer": "^1.4.5-lts.1",
-    "dotenv": "^16.3.1"
+    "react-toastify": "^11.0.3"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",
@@ -34,10 +40,10 @@
     "@typescript-eslint/parser": "^6.0.0",
     "@vitejs/plugin-react": "^4.0.3",
     "autoprefixer": "^10.4.16",
+    "nodemon": "^3.0.1",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.3",
     "typescript": "^5.0.2",
-    "vite": "^4.5.9",
-    "nodemon": "^3.0.1"
+    "vite": "^4.5.9"
   }
 }

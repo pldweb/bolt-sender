@@ -13,6 +13,18 @@ class WhatsAppManager {
     this.loadSessionsFromFiles();
   }
 
+  async renameSession(oldSessionId, newSessionId) {
+    try {
+      await this.deleteSession(oldSessionId);
+
+      return await this.createSession(newSessionId);
+
+    } catch (error) {
+      console.error('Gagal mengganti nama sesi:', error);
+      return false;
+    }
+  }
+
   initializeSessionsDirectory() {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);

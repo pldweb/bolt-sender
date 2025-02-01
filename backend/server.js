@@ -3,6 +3,8 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { WhatsAppManager } from './whatsapp/manager.js';
 import routes from './routes/index.js';
+import authRoutes from './routes/auth.js';
+import apiRoutes from './routes/api.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -22,6 +24,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api', routes);
+app.use('/auth', authRoutes);
+app.use('/api/v1', apiRoutes);
 
 // Health check
 app.get('/be', (req, res) => {
