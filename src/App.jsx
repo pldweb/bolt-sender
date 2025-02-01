@@ -5,19 +5,18 @@ import { MessageSquare, Trash2, Edit2, Plus, Check, X, Send, Paperclip } from 'l
 import config from '../config.json';
 
 function App() {
-  const [sessions, setSessions] = useState<Record<string, any>>({});
-  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [sessions, setSessions] = useState({});
+  const [qrCode, setQrCode] = useState(null);
   const [sessionId, setSessionId] = useState('');
   const [messageData, setMessageData] = useState({ to: '', message: '' });
-  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [refreshInterval, setRefreshInterval] = useState(null);
   const [selectedSession, setSelectedSession] = useState('');
-  const [editingSession, setEditingSession] = useState<string | null>(null);
+  const [editingSession, setEditingSession] = useState(null);
   const [newSessionName, setNewSessionName] = useState('');
   const [showNewNumberModal, setShowNewNumberModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   const ip_address = config.IP;
   const API_BASE = `http://${ip_address}:2025/api`;
@@ -56,9 +55,9 @@ function App() {
     }
   };
 
-  const fetchQrCode = async (id: string) => {
+  const fetchQrCode = async (id) => {
     let retries = 10;
-    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     while (retries > 0) {
       try {
@@ -78,7 +77,7 @@ function App() {
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event) => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) { // 10MB limit
@@ -87,11 +86,11 @@ function App() {
       }
       setSelectedFile(file);
 
-      // Only create preview for images
+      // Untuk preview image saja
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onloadend = () => {
-          setFilePreview(reader.result as string);
+          setFilePreview(reader.result);
         };
         reader.readAsDataURL(file);
       } else {
@@ -100,6 +99,7 @@ function App() {
     }
   };
 
+  // hapus file yang akan dikirim
   const removeSelectedFile = () => {
     setSelectedFile(null);
     setFilePreview(null);
@@ -153,8 +153,7 @@ function App() {
     }
   };
 
-
-  const deleteSession = async (id: string) => {
+  const deleteSession = async (id) => {
     try {
       const response = await axios.delete(`${API_BASE}/session/${id}`);
       if (response.data.success) {
@@ -172,22 +171,20 @@ function App() {
     }
   };
 
-  const startEditingSession = (id: string, currentName: string) => {
+  const startEditingSession = (id, currentName) => {
     setEditingSession(id);
     setNewSessionName(currentName);
   };
 
-  const updateSessionName = async (oldId: string) => {
+  const updateSessionName = async (oldId) => {
     if (!newSessionName.trim() || newSessionName === oldId) {
       setEditingSession(null);
       return;
     }
 
     try {
-      // First create a new session with the new name
       const createResponse = await axios.post(`${API_BASE}/session/create/${newSessionName}`);
       if (createResponse.data.success) {
-        // Then delete the old session
         await deleteSession(oldId);
         setEditingSession(null);
         fetchSessions();
@@ -244,11 +241,21 @@ function App() {
                 {showNewNumberModal && (
                     <div className="mb-4">
                       <div className="flex gap-2">
-                        <input type="text" value={sessionId} onChange={(e) => setSessionId(e.target.value)} placeholder="Enter number name" className="flex-1 border border-gray-300 p-2 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"/>
+                        <input
+                            type="text"
+                            value={sessionId}
+                            onChange={(e) => setSessionId(e.target.value)}
+                            placeholder="Enter number name"
+                            className="flex-1 border border-gray-300 p-2 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
                         <button onClick={createSession} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors">
                           Create
                         </button>
-                        <button onClick={() => {setShowNewNumberModal(false);setSessionId('');}} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors">
+                        <button onClick={() => {
+                              setShowNewNumberModal(false);
+                              setSessionId('');
+                            }}
+                            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors">
                           Cancel
                         </button>
                       </div>
@@ -257,39 +264,67 @@ function App() {
 
                 <div className="space-y-2">
                   {Object.entries(sessions).length > 0 ? (
-                      Object.entries(sessions).map(([id, data]: [string, any]) => (
+                      Object.entries(sessions).map(([id, data]) => (
                           <div key={id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
                             <div className="flex-1">
                               {editingSession === id ? (
                                   <div className="flex gap-2 items-center">
-                                    <input type="text" value={newSessionName} onChange={(e) => setNewSessionName(e.target.value)} className="border border-gray-300 p-1 rounded flex-1"/>
-                                    <button onClick={() => updateSessionName(id)} className="text-green-500 hover:text-green-600">
+                                    <input
+                                        type="text"
+                                        value={newSessionName}
+                                        onChange={(e) => setNewSessionName(e.target.value)}
+                                        className="border border-gray-300 p-1 rounded flex-1"
+                                    />
+                                    <button
+                                        onClick={() => updateSessionName(id)}
+                                        className="text-green-500 hover:text-green-600"
+                                    >
                                       <Check className="h-5 w-5" />
                                     </button>
-                                    <button onClick={() => setEditingSession(null)} className="text-red-500 hover:text-red-600">
+                                    <button
+                                        onClick={() => setEditingSession(null)}
+                                        className="text-red-500 hover:text-red-600"
+                                    >
                                       <X className="h-5 w-5" />
                                     </button>
                                   </div>
                               ) : (
                                   <div className="flex items-center gap-2">
                                     <span className="font-medium">{id}</span>
-                                    <span className={`px-2 py-1 text-xs rounded ${
-                                        data.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                    }`}>{data.status}</span>
+                                    <span
+                                        className={`px-2 py-1 text-xs rounded ${
+                                            data.status === 'open'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-yellow-100 text-yellow-800'
+                                        }`}
+                                    >
+                              {data.status}
+                            </span>
                                   </div>
                               )}
                             </div>
                             <div className="flex gap-2 ml-4">
-                              <button onClick={() => {setSelectedSession(id);fetchQrCode(id);
-                                  }} className="text-blue-500 hover:text-blue-600 px-3 py-1 rounded">
+                              <button
+                                  onClick={() => {
+                                    setSelectedSession(id);
+                                    fetchQrCode(id);
+                                  }}
+                                  className="text-blue-500 hover:text-blue-600 px-3 py-1 rounded"
+                              >
                                 Select
                               </button>
                               {!editingSession && (
-                                  <button onClick={() => startEditingSession(id, id)} className="text-gray-500 hover:text-gray-600">
+                                  <button
+                                      onClick={() => startEditingSession(id, id)}
+                                      className="text-gray-500 hover:text-gray-600"
+                                  >
                                     <Edit2 className="h-5 w-5" />
                                   </button>
                               )}
-                              <button onClick={() => deleteSession(id)} className="text-red-500 hover:text-red-600">
+                              <button
+                                  onClick={() => deleteSession(id)}
+                                  className="text-red-500 hover:text-red-600"
+                              >
                                 <Trash2 className="h-5 w-5" />
                               </button>
                             </div>
@@ -306,13 +341,19 @@ function App() {
                     <>
                       <h2 className="text-2xl font-bold mb-4">Send Message</h2>
                       <div className="space-y-3">
-                        <input type="text" value={messageData.to}
-                               onChange={(e) => setMessageData({...messageData, to: e.target.value})}
-                               placeholder="Recipient Number (e.g., 6281234567890)"
-                               className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        <input
+                            type="text"
+                            value={messageData.to}
+                            onChange={(e) => setMessageData({ ...messageData, to: e.target.value })}
+                            placeholder="Recipient Number (e.g., 6281234567890)"
+                            className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
-                        <textarea value={messageData.message} onChange={(e) => setMessageData({...messageData, message: e.target.value})} placeholder="Message" rows={4}
-                                  className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        <textarea
+                            value={messageData.message}
+                            onChange={(e) => setMessageData({ ...messageData, message: e.target.value })}
+                            placeholder="Message"
+                            rows={4}
+                            className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
 
                         <div className="space-y-2">
@@ -321,7 +362,7 @@ function App() {
                                 onClick={() => fileInputRef.current?.click()}
                                 className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded transition-colors"
                             >
-                              <Paperclip className="h-5 w-5"/>
+                              <Paperclip className="h-5 w-5" />
                               Attach File
                             </button>
                             {selectedFile && (
@@ -331,7 +372,7 @@ function App() {
                                       onClick={removeSelectedFile}
                                       className="text-red-500 hover:text-red-600"
                                   >
-                                    <X className="h-5 w-5"/>
+                                    <X className="h-5 w-5" />
                                   </button>
                                 </div>
                             )}
@@ -355,8 +396,9 @@ function App() {
                         </div>
                         <button
                             onClick={sendMessage}
-                            className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors">
-                          <Send className="h-5 w-5"/>
+                            className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
+                        >
+                          <Send className="h-5 w-5" />
                           Send Message
                         </button>
                       </div>
@@ -367,7 +409,7 @@ function App() {
                     <div className="mt-6">
                       <h3 className="text-xl font-semibold mb-3">Scan QR Code</h3>
                       <div className="bg-white p-4 inline-block rounded-lg shadow">
-                        <QRCode value={qrCode} size={256} level="L"/>
+                        <QRCode value={qrCode} size={256} level="L" />
                       </div>
                     </div>
                 )}
