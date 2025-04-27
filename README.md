@@ -109,6 +109,14 @@ POST /auth/login
 }
 ```
 
+
+GET /auth/profile
+```json
+Pilih Authorization 
+Pilih Bearer Token
+Masukkan token : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBib2x0c2VuZGVyLml0IiwiaWF0IjoxNzM4NTc4ODY3LCJleHAiOjE3Mzg2NjUyNjd9.yq_xQb32e2miUz-VcDUVKDwHCjjERZ1wP4WoNYPFWaw
+```
+
 # WhatsApp API (requires API key in header: X-API-Key)
 POST /api/v1/session/create
 ```json

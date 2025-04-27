@@ -54,12 +54,12 @@ export default function Register() {
                     <MessageSquare className="h-12 w-12 text-green-500" />
                 </div>
                 <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                    Create your account
+                    Buat akun baru
                 </h2>
                 <p className="mt-2 text-center text-sm text-gray-600">
-                    Or{' '}
+                    Atau{' '}
                     <Link to="/login" className="font-medium text-green-600 hover:text-green-500">
-                        sign in to your account
+                        masuk ke akunmu
                     </Link>
                 </p>
             </div>
@@ -95,7 +95,7 @@ export default function Register() {
 
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                Email address
+                                Email
                             </label>
                             <div className="mt-1 relative rounded-md shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -137,7 +137,7 @@ export default function Register() {
 
                         <div>
                             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                                Confirm Password
+                                Konfirmasi Password
                             </label>
                             <div className="mt-1 relative rounded-md shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

@@ -13,7 +13,10 @@ class User {
                 'INSERT INTO users (username, email, password, api_key) VALUES (?, ?, ?, ?)',
                 [username, email, hashedPassword, apiKey]
             );
-            return { success: true, apiKey };
+            return {
+                success: true,
+                apiKey
+            };
         } catch (error) {
             throw error;
         } finally {

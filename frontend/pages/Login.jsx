@@ -43,12 +43,12 @@ export default function Login() {
                     <MessageSquare className="h-12 w-12 text-green-500" />
                 </div>
                 <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                    Sign in to your account
+                    Masuk ke Akunmu
                 </h2>
                 <p className="mt-2 text-center text-sm text-gray-600">
-                    Or{' '}
+                    Atau{' '}
                     <Link to="/register" className="font-medium text-green-600 hover:text-green-500">
-                        create a new account
+                        buat akun baru
                     </Link>
                 </p>
             </div>
@@ -64,7 +64,7 @@ export default function Login() {
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                Email address
+                                Email
                             </label>
                             <div className="mt-1 relative rounded-md shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -113,7 +113,7 @@ export default function Login() {
                                     loading ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
                             >
-                                {loading ? 'Signing in...' : 'Sign in'}
+                                {loading ? 'Sedang Masuk...' : 'Masuk'}
                             </button>
                         </div>
                     </form>

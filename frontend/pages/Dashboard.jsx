@@ -16,11 +16,13 @@ export default function Dashboard() {
     const [showNewNumberModal, setShowNewNumberModal] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const [filePreview, setFilePreview] = useState(null);
+    const [userName, setUserName] = useState('');
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
 
-    const ip_address = '192.168.100.99';
+    const ip_address = '192.168.1.21';
     const API_BASE = `http://${ip_address}:2025/api/v1`;
+    const API_PROFILE = `http://${ip_address}:2025`;
     const token = localStorage.getItem('token');
     const apiKey = localStorage.getItem('apiKey');
 
@@ -32,6 +34,22 @@ export default function Dashboard() {
         localStorage.removeItem('apiKey');
         navigate('/login');
     };
+
+    const getProfile = async () => {
+        try {
+            const response = await axios.get(`${API_PROFILE}/auth/profile`, {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+            if (response.data.success){
+                setUserName(response.data.user.username);
+            }
+        } catch (error) {
+            console.error('Failed', error);
+            alert('Gagal tampilkan nama')
+        }
+    }
 
     const createSession = async () => {
         if (!sessionId.trim()) {
@@ -213,6 +231,7 @@ export default function Dashboard() {
     };
 
     useEffect(() => {
+        getProfile();
         fetchSessions();
         const interval = setInterval(fetchSessions, 5000);
         return () => clearInterval(interval);
@@ -239,6 +258,7 @@ export default function Dashboard() {
                             <h1 className="text-3xl font-bold text-gray-900">Bolt Sender</h1>
                         </div>
                         <div className="button-logout">
+                            <span className="mr-4 text-gray-600">Welcome, {userName}</span> {/* Menampilkan nama pengguna */}
                             <button onClick={handleLogout} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
                                 <LogOut className="h-5 w-5 text-red-500"/>
                                 Logout

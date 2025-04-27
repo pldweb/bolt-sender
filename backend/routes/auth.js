@@ -15,7 +15,7 @@ router.post('/register', async (req, res) => {
         if (!username || !email || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required'
+                message: 'Semuanya harus diisi'
             });
         }
 
@@ -24,7 +24,7 @@ router.post('/register', async (req, res) => {
         if (existingUser) {
             return res.status(400).json({
                 success: false,
-                message: 'Email already registered'
+                message: 'Email sudah terdaftar'
             });
         }
 
@@ -33,14 +33,14 @@ router.post('/register', async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: 'Registration successful',
+            message: 'Pendaftaran berhasil',
             apiKey: result.apiKey
         });
     } catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({
             success: false,
-            message: 'Registration failed'
+            message: 'Pendaftaran gagal'
         });
     }
 });
